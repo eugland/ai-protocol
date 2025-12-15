@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teams Message Sender (Flask)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        h1 { color: #6264A7; }
+        h2 { color: #444; margin-top: 32px; }
+        select, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #6264A7;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover { background-color: #555799; }
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        label { font-weight: bold; }
+        .small { font-size: 0.9em; color: #555; }
+        hr {
+            margin: 30px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teams Message Sender (Backend Flask)</h1>
+
+    <p class="small">
+        Logged in to Graph as: <b>{{ user_name }}</b><br>
+        (Auth uses device code on the server side; only once per cache lifetime.)
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="message {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- ===== TEAMS FORM ===== -->
+    <h2>Send Microsoft Teams Message</h2>
+
+    <form method="post" action="{{ url_for('send') }}">
+        <label for="teamSelect">Select a Team:</label>
+        <select id="teamSelect" name="team_id" required>
+            <option value="">-- Select a Team --</option>
+            {% for team in teams %}
+                <option value="{{ team.id }}"
+                        {% if team.id == default_team_id %}selected{% endif %}>
+                    {{ team.displayName }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <label for="channelSelect">Select a Channel:</label>
+        <select id="channelSelect" name="channel_id" required>
+            <option value="">Select a team first...</option>
+        </select>
+
+        <label for="messageInput">Your Message (plain text, will be wrapped in HTML):</label>
+        <textarea id="messageInput" name="message" rows="5"
+                  placeholder="Enter your message here..." required></textarea>
+
+        <button type="submit">Send Teams Message</button>
+    </form>
+
+    <hr>
+
+    <!-- ===== SLACK FORM ===== -->
+    <h2>Send Slack Message</h2>
+
+    <p class="small">
+        Uses <code>SLACK_BOT_TOKEN</code> (bot token, e.g. <code>xoxb-...</code>).<br>
+        Channels listed are those the bot can see (and is in).
+    </p>
+
+    {% if slack_error %}
+      <div class="message error">{{ slack_error }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('slack_send') }}">
+        <label for="slackChannelSelect">Slack Channel:</label>
+        <select id="slackChannelSelect" name="slack_channel_id" required
+                {% if not slack_channels %}disabled{% endif %}>
+            {% if not slack_channels %}
+                <option value="">No Slack channels loaded</option>
+            {% else %}
+                <option value="">-- Select a Channel --</option>
+                {% for ch in slack_channels %}
+                    <option value="{{ ch.id }}">{{ ch.name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+
+        <label for="slackMessageInput">Your Slack Message:</label>
+        <textarea id="slackMessageInput" name="slack_message" rows="4"
+                  placeholder="Enter your Slack message..." required></textarea>
+
+        <button type="submit" {% if not slack_channels %}disabled{% endif %}>
+            Send Slack Message
+        </button>
+    </form>
+
+    <script>
+        const teamSelect = document.getElementById('teamSelect');
+        const channelSelect = document.getElementById('channelSelect');
+
+        async function loadChannels(teamId, preselectChannelId = "") {
+            if (!teamId) {
+                channelSelect.innerHTML = '<option value="">Select a team first...</option>';
+                channelSelect.disabled = true;
+                return;
+            }
+
+            channelSelect.innerHTML = '<option value="">Loading channels...</option>';
+            channelSelect.disabled = true;
+
+            try {
+                const resp = await fetch(`/channels?team_id=${encodeURIComponent(teamId)}`);
+                const data = await resp.json();
+
+                if (data.error) {
+                    channelSelect.innerHTML = `<option value="">Error: ${data.error}</option>`;
+                    return;
+                }
+
+                channelSelect.innerHTML = '<option value="">-- Select a Channel --</option>';
+                data.forEach(ch => {
+                    const opt = document.createElement("option");
+                    opt.value = ch.id;
+                    opt.textContent = ch.displayName;
+                    if (preselectChannelId && ch.id === preselectChannelId) {
+                        opt.selected = true;
+                    }
+                    channelSelect.appendChild(opt);
+                });
+
+                channelSelect.disabled = false;
+            } catch (e) {
+                console.error("Error loading channels", e);
+                channelSelect.innerHTML = '<option value="">Failed to load channels</option>';
+            }
+        }
+
+        // Load channels when team changes
+        teamSelect.addEventListener('change', () => {
+            loadChannels(teamSelect.value);
+        });
+
+        // If there is a default team/channel from the backend, load on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const defaultTeamId = "{{ default_team_id }}";
+            const defaultChannelId = "{{ default_channel_id }}";
+            if (defaultTeamId) {
+                teamSelect.value = defaultTeamId;
+                loadChannels(defaultTeamId, defaultChannelId);
+            }
+        });
+    </script>
+</body>
+</html>

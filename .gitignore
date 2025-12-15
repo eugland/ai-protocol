@@ -1,0 +1,88 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# =========================
+# Packaging / build
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# =========================
+# Testing / coverage
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# IDEs / Editors
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Environment variables / secrets
+# =========================
+.env
+.env.*
+msal_cache.json
+*.pem
+*.key
+
+# =========================
+# Type checking
+# =========================
+.mypy_cache/
+.pyright/
+.dmypy.json
+
+# =========================
+# Linting / formatting
+# =========================
+.ruff_cache/
+.pylint.d/
+
+# =========================
+# Local databases
+# =========================
+*.sqlite
+*.sqlite3
+
+# =========================
+# Misc
+# =========================
+.cache/
