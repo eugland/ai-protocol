@@ -141,7 +141,6 @@ def send_message_to_channel(token, team_id, channel_id, content_html):
     return resp.json()
 
 
-# ====== SLACK HELPERS ======
 def slack_headers():
     if not SLACK_BOT_TOKEN:
         raise RuntimeError("SLACK_BOT_TOKEN is not configured in environment.")
@@ -149,10 +148,6 @@ def slack_headers():
 
 
 def slack_list_channels():
-    """
-    Return a list of channels the bot can see in Slack.
-    Requires scopes: channels:read, groups:read, im:read, mpim:read (as needed).
-    """
     url = "https://slack.com/api/conversations.list"
     params = {
         "types": "public_channel,private_channel",
@@ -162,15 +157,10 @@ def slack_list_channels():
     data = resp.json()
     if not data.get("ok"):
         raise RuntimeError(f"Slack API Error → {data}")
-    # Filter out archived channels for convenience
     return [c for c in data.get("channels", []) if not c.get("is_archived")]
 
 
 def slack_send_message(channel_id: str, text: str):
-    """
-    Send a simple message to the specified Slack channel.
-    Requires scope: chat:write and bot in the channel.
-    """
     url = "https://slack.com/api/chat.postMessage"
     headers = slack_headers()
     headers["Content-Type"] = "application/json; charset=utf-8"
@@ -185,17 +175,8 @@ def slack_send_message(channel_id: str, text: str):
     return data
 
 
-# ====== Routes ======
 @app.route("/", methods=["GET"])
 def index():
-    """
-    Show:
-    - who am I (Graph /me)
-    - joined Teams
-    - Slack channels (if configured)
-    - optional default team/channel
-    """
-    # ---- Teams / Microsoft Graph section ----
     try:
         token = acquire_token()
     except Exception as e:
@@ -214,8 +195,6 @@ def index():
     except Exception as e:
         print("Error fetching teams:", e)
         teams = []
-
-    # ---- Slack section ----
     slack_channels = []
     slack_error = None
     if SLACK_BOT_TOKEN:
@@ -285,9 +264,6 @@ def send():
 
 @app.route("/slack/send", methods=["POST"])
 def slack_send():
-    """
-    Send a message to a selected Slack channel.
-    """
     channel_id = request.form.get("slack_channel_id")
     message = request.form.get("slack_message", "").strip()
 
@@ -308,7 +284,4 @@ def slack_send():
 
 
 if __name__ == "__main__":
-    # Run Flask development server
-    # FLASK_APP=app.py flask run
-    # or: python app.py
     app.run(host="0.0.0.0", port=8080, debug=True)

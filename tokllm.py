@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-MODEL_ID = "Qwen/Qwen2.5-7B"
+MODEL_ID = "Qwen/Qwen2.5-3B-Instruct"
 KEY_B64 = "mJd8h4w8m7Gkq+2q0wzvWZg0YH0p4o8Uu1Q1l9uXcH0="
 KEY = base64.b64decode(KEY_B64)
 AES = AESGCM(KEY)
@@ -20,7 +20,7 @@ def _hf_kwargs(model_id: str) -> Dict[str, Any]:
         return {"trust_remote_code": True}
     return {}
 
-j
+
 @dataclass
 class WireMessage:
     blob_b64: str
